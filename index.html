@@ -24,10 +24,153 @@
 	
 	  <div class="h-entry">
 		
-			<h1><a href="https://architect.ericgregorich.com/2024/03/01/power-apps-error.html">Power Apps Error Handling when using the Patch function</a></h1>
+			<h1><a href="https://eg-architect.micro.blog/2024/03/11/bypass-first-access.html">Bypass first access consent dialog in Power Apps</a></h1>
 		
 
-		<a href="https://architect.ericgregorich.com/2024/03/01/power-apps-error.html" class="u-url"><time class="dt-published" datetime="2024-03-01 15:07:52 -0500">Mar 1, 2024</time></a>
+		<a href="https://eg-architect.micro.blog/2024/03/11/bypass-first-access.html" class="u-url"><time class="dt-published" datetime="2024-03-11 20:54:45 -0400">Mar 11, 2024</time></a>
+
+		<div class="e-content">
+			 <p>How to use PowerShell to disable the consent dialog showing when a user opens Power Apps for the first time or when a new connection is added.</p>
+<h2 id="set-consent-bypass">Set Consent Bypass</h2>
+<p>PowerShell can disable the consent dialog when the user opens the Power App for the first time or when a new connection is added.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force
+</span></span><span style="display:flex;"><span>dir . | Unblock-File
+</span></span><span style="display:flex;"><span>Install-Module -Name Microsoft.PowerApps.Administration.PowerShell
+</span></span><span style="display:flex;"><span>Install-Module -Name Microsoft.PowerApps.PowerShell -AllowClobber
+</span></span><span style="display:flex;"><span>Import-Module Microsoft.Online.SharePoint.Powershell -Verbose
+</span></span><span style="display:flex;"><span>Connect-SPOService -Url <span style="color:#f92672">{</span>Your SharePoint Admin Tenant URL<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>Set-AdminPowerAppApisToBypassConsent -AppName <span style="color:#f92672">{</span>Your App ID<span style="color:#f92672">}</span>
+</span></span></code></pre></div><p>When prompted, enter your Environment ID in the URL or the Power Platform Admin center in the selected Environment.</p>
+<h2 id="clear-consent-bypass">Clear Consent Bypass</h2>
+<p>The following PowerShell clears the consent bypass that is set. The users will again be prompted for consent when they open the app for the first time or if a new connection is added.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>Clear-AdminPowerAppApisToBypassConsent -AppName <span style="color:#f92672">{</span>Your App Id<span style="color:#f92672">}</span>
+</span></span></code></pre></div>
+		</div>
+	  </div>
+	
+	  <div class="h-entry">
+		
+			<h1><a href="https://eg-architect.micro.blog/2024/03/09/using-stored-procedures.html">Calling Stored Procedures directly from Power Apps</a></h1>
+		
+
+		<a href="https://eg-architect.micro.blog/2024/03/09/using-stored-procedures.html" class="u-url"><time class="dt-published" datetime="2024-03-09 18:04:58 -0400">Mar 9, 2024</time></a>
+
+		<div class="e-content">
+			 <p>As of March 9, 2024, Microsoft has released the ability to call SQL Stored Procedures directly from within a Power App. This is a massive improvement for anyone using Power Apps with SQL! Previously, if we wanted to use stored procedures, our app would need to execute a Power Automate Flow, which would call the stored procedure, then we would return the Response to the Power App. This was tedious, slow, and required a premium license.</p>
+<blockquote>
+<p>This feature is in Preview and should be Generally Available in the coming months. It&rsquo;s not recommended to use this for production apps at this time. However, this is definitely a feature you&rsquo;ll want to implement if you use stored procedures in your solutions.</p>
+</blockquote>
+<h2 id="enable-the-feature">Enable the feature</h2>
+<ul>
+<li>Edit your Power App.</li>
+<li>Open <strong>Settings</strong>.</li>
+<li>Under <strong>Upcoming Features</strong>, enable <code>SQL Server stored procedures</code>.</li>
+</ul>
+<h2 id="add-your-stored-procedure">Add your stored procedure</h2>
+<ul>
+<li>Edit your Power App.</li>
+<li>Open <strong>Data</strong>.</li>
+<li>Click <strong>Add Data</strong>.</li>
+<li>Select <strong>SQL Server</strong>.</li>
+<li>Select your <strong>SQL Server Connection</strong>.</li>
+<li>A panel will open on the right. Select the Stored Procedures tab.</li>
+<li>Find your stored procedure(s) and select them.</li>
+<li>Click Connect to add them to your app.</li>
+</ul>
+<h2 id="calling-your-stored-procedure">Calling your Stored Procedure</h2>
+<p>Calling your stored procedure is pretty simple. In your formula, start typing the name of your stored procedure. The database name and stored procedure name will appear.</p>
+<p>If your stored procedure has any input parameters, you&rsquo;ll need to include them. You will also want to save your results to a variable or collection so that you can use it in your app.</p>
+<pre tabindex="0"><code>UpdateContext(
+{
+    tmpResult: DBName.dboSaveItems(
+    {
+        MyCustomItems: JSON(colMyCustomItems),
+        MyCustomDetails:JSON(colMyCustomDetails)
+    }
+    ).ResultSets
+}
+);
+</code></pre><p>In my example, DBName is the fake name of my database, dboSaveItems is the fake name of my stored procedure. My stored procedure takes two input parameters, MyCustomItems, and MyCustomDetails. These parameters are expecting JSON. Long story short, I&rsquo;m taking the data in my app, patching it to a collection, then converting it to JSON and passing it to the Stored Procedure. The Stored Procedure parses this JSON, saves all the data, and returns the results. All of this is run in a Transaction, which means if there are any errors, everything is rolled back.</p>
+<p>The main point is, I&rsquo;m calling my procedure and passing in my input parameters. The stored procedure then returns the results. In my current production apps, we do the same thing, except we pass this JSON to a Power Automate Flow, which calls the stored procedure, then returns the results to the app.</p>
+<h2 id="reading-your-results">Reading your results.</h2>
+<p>This is where things can get tricky.</p>
+<p>Your results are returned as an <a href="https://learn.microsoft.com/en-us/power-platform/power-fx/untyped-object">Untyped Object</a>.  Power Apps can handle this data type, but not as elegantly as other types. In short, you have no IntelliSense that would normally make it easy to use your results simply by typing the name of the properties you want to reference.</p>
+<p>Your stored procedure may return a wide variety of things, from single output parameters, to entire tables of data.</p>
+<p>You need to know what the results look like in order to read the values. To achieve this, open your <strong>Monitor tool</strong>, then execute your Stored Procedure. Look at the results of this execution in the Monitor Tool.</p>
+<p>Here are the results from this example stored procedure, which returns a single text value containing the new ID of the item that was created.</p>
+<pre tabindex="0"><code>&#34;body&#34;: {
+    &#34;ResultSets&#34;: {
+        &#34;Table1&#34;: [
+            {
+                &#34;ItemId&#34;: 24567
+            }
+        ]
+    },
+    &#34;OutputParameters&#34;: {}
+}
+</code></pre><p>To fetch the value of my ItemId column from tmpResult, I&rsquo;d need to write a formula that finds the specific column and converts the value into whatever DataType it is.</p>
+<pre tabindex="0"><code>Text(Index(Table(tmpResult.Table1), 1 ).Value.ItemId )
+</code></pre><p>The above example converts Table1 into a Table object, then gets the first row of the table using the Index function. Finally, we get the value and convert the ItemId column to text.</p>
+<p>If my column Data Type were a number, I would use Value() instead of Text(). If it were a date, I&rsquo;d use DateValue(), and so on.</p>
+<p>The result of my formula is <code>24567</code>.</p>
+<p><strong>What if I want to return a collection of data from my stored procedure?</strong>
+In this scenario, my stored procedure returns a collection of data that I intend to use in my app. Calling the stored procedure is essentially the same.</p>
+<p>I&rsquo;ll add a button to my page that will be used to execute the stored procedure and return the results into a collection that I can use elsewhere in my app, perhaps a Gallery, Table, or a Combo box control.</p>
+<p>The first part of my formula triggers the stored procedure and returns the results.</p>
+<pre tabindex="0"><code>UpdateContext({tmpItemStatusValues: DBName.dboGetItemStatusTypes().ResultSets});
+</code></pre><p>Again, execute your stored procedure while using the Monitor Tool. Read the results. You should see something that resembles the following, only with your data.</p>
+<pre tabindex="0"><code>&#34;body&#34;: {
+    &#34;ResultSets&#34;: {
+        &#34;Table1&#34;: [
+            {
+                &#34;Id&#34;: &#34;6F5A10C4-5D6B-4091-A439-45D4DC141A99&#34;,
+                &#34;WhenCreated&#34;: &#34;2022-09-30T15:28:41.2066667&#34;,
+                &#34;WhenModified&#34;: &#34;2023-01-05T13:46:56.56&#34;,
+                &#34;Name&#34;: &#34;Pending&#34;,
+                &#34;Description&#34;: &#34;This item is pending&#34;,
+                &#34;SortOrder&#34;: 1,
+                &#34;IsActive&#34;: true
+            },
+            {
+                &#34;Id&#34;: &#34;7B21644F-C4D1-45DD-BAA1-17533C64895B&#34;,
+                &#34;WhenCreated&#34;: &#34;2022-09-30T15:28:41.2066667&#34;,
+                &#34;WhenModified&#34;: &#34;2023-01-05T13:46:56.61&#34;,
+                &#34;Name&#34;: &#34;Complete&#34;,
+                &#34;Description&#34;: &#34;This item is complete&#34;,
+                &#34;SortOrder&#34;: 2,
+                &#34;IsActive&#34;: true
+            }
+        ]
+    },
+</code></pre><p>The important part is the structure itself. You have <strong>Table1</strong> returned as a nested node under <strong>ResultSet</strong>. Since I&rsquo;m saving ResultSet to my variable, <strong>tmpItemStatusValues</strong>, I now need to write a formula to read it and convert it into something usable.</p>
+<p>Some controls, like the Gallery, we can simply add our Table1 directly into the control Data Source and start using it. Unfortunately, if we want to use it elsewhere as a Typed object (with IntelliSense) we&rsquo;ll need to convert the results.</p>
+<p>Next, update your button&rsquo;s <code>OnSelect</code> property to include the For All ForAll function. We&rsquo;re looping through, our returned data and converting each field into a usable Data Type that we can use in the app. The results are saved to a new collection named <code>colItemStatusValues</code>.</p>
+<pre tabindex="0"><code>UpdateContext({tmpItemStatusValues: DBName.dboGetItemStatusTypes().ResultSets});
+
+ClearCollect(
+    colItemStatusValues,
+    ForAll(
+        tmpItemStatusValues.Table1,
+        {
+            Name: Text(ThisRecord.Name),
+            Description: Text(ThisRecord.Description),
+            Id: GUID(ThisRecord.Id)
+        }
+    )
+)
+</code></pre><p>We can now use the <code>colItemStatusValues</code> collection as we do any other collection in our app!</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>I&rsquo;m certain there are other ways to handle this, and I&rsquo;m learning them as I go. As a quick recap, I demonstrated how to execute a stored procedure directly from a Power App and convert the result into something we can use in our app. This bypasses the need to use Power Automate to call stored procedures, which makes things faster and more efficient.</p>
+
+		</div>
+	  </div>
+	
+	  <div class="h-entry">
+		
+			<h1><a href="https://eg-architect.micro.blog/2024/03/01/power-apps-error.html">Power Apps Error Handling when using the Patch function</a></h1>
+		
+
+		<a href="https://eg-architect.micro.blog/2024/03/01/power-apps-error.html" class="u-url"><time class="dt-published" datetime="2024-03-01 16:07:52 -0400">Mar 1, 2024</time></a>
 
 		<div class="e-content">
 			 <p>When using the Patch Function to save data to a data source, such as Dataverse, or SQL, our user will see a red error bar at the top of the screen if any unhandled errors occur.</p>
@@ -111,10 +254,10 @@
 	
 	  <div class="h-entry">
 		
-			<h1><a href="https://architect.ericgregorich.com/2024/02/26/azure-app-registration.html">Azure App Registration for Select SharePoint Sites</a></h1>
+			<h1><a href="https://eg-architect.micro.blog/2024/02/26/azure-app-registration.html">Azure App Registration for Select SharePoint Sites</a></h1>
 		
 
-		<a href="https://architect.ericgregorich.com/2024/02/26/azure-app-registration.html" class="u-url"><time class="dt-published" datetime="2024-02-26 17:20:04 -0500">Feb 26, 2024</time></a>
+		<a href="https://eg-architect.micro.blog/2024/02/26/azure-app-registration.html" class="u-url"><time class="dt-published" datetime="2024-02-26 18:20:04 -0400">Feb 26, 2024</time></a>
 
 		<div class="e-content">
 			 <p>This post explains how to create an Azure App Registration and configure it to provide your application access to only select SharePoint sites.</p>
@@ -164,10 +307,10 @@
 	
 	  <div class="h-entry">
 		
-			<h1><a href="https://architect.ericgregorich.com/2024/02/23/converting-from-utc.html">Converting from UTC in Power Apps</a></h1>
+			<h1><a href="https://eg-architect.micro.blog/2024/02/23/converting-from-utc.html">Converting from UTC in Power Apps</a></h1>
 		
 
-		<a href="https://architect.ericgregorich.com/2024/02/23/converting-from-utc.html" class="u-url"><time class="dt-published" datetime="2024-02-23 16:58:28 -0500">Feb 23, 2024</time></a>
+		<a href="https://eg-architect.micro.blog/2024/02/23/converting-from-utc.html" class="u-url"><time class="dt-published" datetime="2024-02-23 17:58:28 -0400">Feb 23, 2024</time></a>
 
 		<div class="e-content">
 			 <p>We can use the TimeZoneOffset function in Power Apps to adjust for the current time zone from UTC time. We would typically want to save our Dates as UTC time in any database we&rsquo;re using, and convert those dates to the local time zone when viewing them in our app.</p>
@@ -180,10 +323,10 @@
 	
 	  <div class="h-entry">
 		
-			<h1><a href="https://architect.ericgregorich.com/2024/02/23/working-with-checkbox.html">Working with Checkbox controls in a Power Apps Gallery</a></h1>
+			<h1><a href="https://eg-architect.micro.blog/2024/02/23/working-with-checkbox.html">Working with Checkbox controls in a Power Apps Gallery</a></h1>
 		
 
-		<a href="https://architect.ericgregorich.com/2024/02/23/working-with-checkbox.html" class="u-url"><time class="dt-published" datetime="2024-02-23 08:16:34 -0500">Feb 23, 2024</time></a>
+		<a href="https://eg-architect.micro.blog/2024/02/23/working-with-checkbox.html" class="u-url"><time class="dt-published" datetime="2024-02-23 09:16:34 -0400">Feb 23, 2024</time></a>
 
 		<div class="e-content">
 			 <p>Handling checkboxes can be tricky and does not always work as expected. Using a collection is a simple and robust solution. For this demo, let&rsquo;s set up a Gallery with checkbox controls to demonstrate various ways to interact with them.</p>
@@ -250,10 +393,10 @@
 	
 	  <div class="h-entry">
 		
-			<h1><a href="https://architect.ericgregorich.com/2024/02/18/microsoft-power-automate.html">Microsoft Power Automate Approval Types</a></h1>
+			<h1><a href="https://eg-architect.micro.blog/2024/02/18/microsoft-power-automate.html">Microsoft Power Automate Approval Types</a></h1>
 		
 
-		<a href="https://architect.ericgregorich.com/2024/02/18/microsoft-power-automate.html" class="u-url"><time class="dt-published" datetime="2024-02-18 08:00:00 -0500">Feb 18, 2024</time></a>
+		<a href="https://eg-architect.micro.blog/2024/02/18/microsoft-power-automate.html" class="u-url"><time class="dt-published" datetime="2024-02-18 09:00:00 -0400">Feb 18, 2024</time></a>
 
 		<div class="e-content">
 			 <p>Microsoft Power Automate has two main Approval Types.</p>
@@ -274,10 +417,10 @@
 	
 	  <div class="h-entry">
 		
-			<h1><a href="https://architect.ericgregorich.com/2024/02/14/validate-your-power.html">Validate your Power Automate Licenses</a></h1>
+			<h1><a href="https://eg-architect.micro.blog/2024/02/14/validate-your-power.html">Validate your Power Automate Licenses</a></h1>
 		
 
-		<a href="https://architect.ericgregorich.com/2024/02/14/validate-your-power.html" class="u-url"><time class="dt-published" datetime="2024-02-14 08:52:06 -0500">Feb 14, 2024</time></a>
+		<a href="https://eg-architect.micro.blog/2024/02/14/validate-your-power.html" class="u-url"><time class="dt-published" datetime="2024-02-14 09:52:06 -0400">Feb 14, 2024</time></a>
 
 		<div class="e-content">
 			 <p>Microsoft has provided some PowerShell that allows admins to check their Power Platform Environments for invalid Microsoft Power Automate Licenses before it becomes an issue.</p>
@@ -315,10 +458,10 @@
 	
 	  <div class="h-entry">
 		
-			<h1><a href="https://architect.ericgregorich.com/2024/02/01/create-a-selfsigned.html">Create a self-signed Certificate using PowerShell</a></h1>
+			<h1><a href="https://eg-architect.micro.blog/2024/02/01/create-a-selfsigned.html">Create a self-signed Certificate using PowerShell</a></h1>
 		
 
-		<a href="https://architect.ericgregorich.com/2024/02/01/create-a-selfsigned.html" class="u-url"><time class="dt-published" datetime="2024-02-01 08:00:00 -0500">Feb 1, 2024</time></a>
+		<a href="https://eg-architect.micro.blog/2024/02/01/create-a-selfsigned.html" class="u-url"><time class="dt-published" datetime="2024-02-01 09:00:00 -0400">Feb 1, 2024</time></a>
 
 		<div class="e-content">
 			 <p>Run the following PowerShell to create a self-signed certificate using Windows and PowerShell. Useful for creating certificates to use in Azure App Registrations.</p>
@@ -460,10 +603,10 @@ You&rsquo;ll end up with something like this. In my case, the <code>.cer</code> 
 	
 	  <div class="h-entry">
 		
-			<h1><a href="https://architect.ericgregorich.com/2024/01/30/infopath-end-of.html">InfoPath 2013 End of Support</a></h1>
+			<h1><a href="https://eg-architect.micro.blog/2024/01/30/infopath-end-of.html">InfoPath 2013 End of Support</a></h1>
 		
 
-		<a href="https://architect.ericgregorich.com/2024/01/30/infopath-end-of.html" class="u-url"><time class="dt-published" datetime="2024-01-30 09:00:00 -0500">Jan 30, 2024</time></a>
+		<a href="https://eg-architect.micro.blog/2024/01/30/infopath-end-of.html" class="u-url"><time class="dt-published" datetime="2024-01-30 10:00:00 -0400">Jan 30, 2024</time></a>
 
 		<div class="e-content">
 			 <p>InfoPath 2013 client and InfoPath Forms Services in SharePoint Online will end support in July 2026.</p>
@@ -477,10 +620,10 @@ You&rsquo;ll end up with something like this. In my case, the <code>.cer</code> 
 	
 	  <div class="h-entry">
 		
-			<h1><a href="https://architect.ericgregorich.com/2024/01/16/the-power-apps.html">The Power Apps With Function</a></h1>
+			<h1><a href="https://eg-architect.micro.blog/2024/01/16/the-power-apps.html">The Power Apps With Function</a></h1>
 		
 
-		<a href="https://architect.ericgregorich.com/2024/01/16/the-power-apps.html" class="u-url"><time class="dt-published" datetime="2024-01-16 08:35:00 -0500">Jan 16, 2024</time></a>
+		<a href="https://eg-architect.micro.blog/2024/01/16/the-power-apps.html" class="u-url"><time class="dt-published" datetime="2024-01-16 09:35:00 -0400">Jan 16, 2024</time></a>
 
 		<div class="e-content">
 			 <p>The Microsoft Power Apps <a href="https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-with">With function</a> is a powerful way to divide complex formulas into smaller pieces. It is useful when used within a ForAll, since we can’t set variables within a ForAll. Since the formula is contained, it is preferred over context variables created using UpdateContext or global variables created using Set.</p>
@@ -517,10 +660,10 @@ You&rsquo;ll end up with something like this. In my case, the <code>.cer</code> 
 	
 	  <div class="h-entry">
 		
-			<h1><a href="https://architect.ericgregorich.com/2024/01/12/validate-email-addresses.html">Validate Email Addresses in Power Apps</a></h1>
+			<h1><a href="https://eg-architect.micro.blog/2024/01/12/validate-email-addresses.html">Validate Email Addresses in Power Apps</a></h1>
 		
 
-		<a href="https://architect.ericgregorich.com/2024/01/12/validate-email-addresses.html" class="u-url"><time class="dt-published" datetime="2024-01-12 08:32:00 -0500">Jan 12, 2024</time></a>
+		<a href="https://eg-architect.micro.blog/2024/01/12/validate-email-addresses.html" class="u-url"><time class="dt-published" datetime="2024-01-12 09:32:00 -0400">Jan 12, 2024</time></a>
 
 		<div class="e-content">
 			 <p>A common request when building Power Apps is to validate the email address of a textbox. This can be done easily using the <a href="https://learn.microsoft.com/en-us/power-platform/power-fx/reference/function-ismatch?ref=thepowerarchitect.com">IsMatch</a> function. The function also does all kinds of validation using regular expressions. The Match.Email property can be used to check if it’s a valid email automatically.</p>
@@ -565,6 +708,25 @@ You&rsquo;ll end up with something like this. In my case, the <code>.cer</code> 
 <div>
 Explore the site by checking out some <a href="/surprise-me">random posts</a>,  or <a href="/search">search</a> for something specific. If I was helpful, you could buy me a <a href="https://ko-fi.com/ericgregorich">coffee</a>.  
 </div>
+<hr>
+<div>
+<form
+  action="https://buttondown.email/api/emails/embed-subscribe/thepowerarchitect"
+  method="post"
+  target="popupwindow"
+  onsubmit="window.open('https://buttondown.email/thepowerarchitect', 'popupwindow')"
+  class="embeddable-buttondown-form"
+>
+  <label for="bd-email">Enter your email</label>
+  <input type="email" name="email" id="bd-email" />
+  
+  <input type="submit" value="Subscribe" />
+  <p>
+    <a href="https://buttondown.email/refer/thepowerarchitect" target="_blank">Powered by Buttondown.</a>
+  </p>
+</form>
+</div>
+<hr>
 <br>
 
 <div class="footer-links">
@@ -578,7 +740,7 @@ Powered by <a href="https://micro.blog">Micro.blog</a> and the <a href="https://
 </div>
 <br>
 
-<script src="https://tinylytics.app/embed/ruxeC3Pyu13ozgzu_1sz.js" defer></script>
+<script src="https://tinylytics.app/embed/ruxeC3Pyu13ozgzu_1sz.js?kudos=🩷" defer></script>
 
   </body>
 
